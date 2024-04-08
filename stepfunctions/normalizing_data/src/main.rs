@@ -1,30 +1,41 @@
-use lambda_http::{run, service_fn, tracing, Body, Error, Request, RequestExt, Response};
+use lambda_runtime::{run, service_fn, Error,LambdaEvent};
+use serde::{Deserialize, Serialize};
 
-/// This is the main body for the function.
-/// Write your code inside it.
-/// There are some code example in the following URLs:
-/// - https://github.com/awslabs/aws-lambda-rust-runtime/tree/main/examples
-async fn function_handler(event: Request) -> Result<Response<Body>, Error> {
-    // Extract some useful information from the request
-    let who = event
-        .query_string_parameters_ref()
-        .and_then(|params| params.first("name"))
-        .unwrap_or("world");
-    let message = format!("Hello {who}, this is an AWS Lambda HTTP request");
+#[derive(Deserialize)]
+struct Request {
+    x: Vec<Vec<f64>>,
+    y: Vec<i32>,
+}
 
-    // Return something that implements IntoResponse.
-    // It will be serialized to the right response event automatically by the runtime
-    let resp = Response::builder()
-        .status(200)
-        .header("content-type", "text/html")
-        .body(message.into())
-        .map_err(Box::new)?;
-    Ok(resp)
+#[derive(Serialize)]
+struct Response {
+    x: Vec<Vec<f64>>,  // Changed to f64 to match the calculation in function_handler
+    y: Vec<i32>,
+}
+
+async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error>  {
+    // Standardize the X values
+    let mut standardized_x = vec![];
+    for row in event.payload.x.iter() {
+        let mean: f64 = row.iter().sum::<f64>() as f64 / row.len() as f64;
+        let std_dev: f64 = (row.iter().map(|xi| (xi - mean as f64).powf(2.0) as f64).sum::<f64>() / row.len() as f64).sqrt();
+        let standardized_row: Vec<f64> = row.iter().map(|xi| ((xi - mean as f64) as f64 / std_dev)).collect();
+        standardized_x.push(standardized_row);
+    }
+
+    Ok(Response {
+        x: standardized_x,
+        y: event.payload.y,
+    })
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    tracing::init_default_subscriber();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .with_target(false)
+        .without_time()
+        .init();
 
     run(service_fn(function_handler)).await
 }
