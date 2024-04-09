@@ -14,12 +14,37 @@ struct Response {
 }
 
 async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error>  {
+    // Get the number of columns
+    let num_cols = event.payload.x[0].len();
+
+    // Initialize vectors to hold the mean and standard deviation for each column
+    let mut means = vec![0.0; num_cols];
+    let mut std_devs = vec![0.0; num_cols];
+
+    // Calculate the mean for each column
+    for row in &event.payload.x {
+        for (j, xi) in row.iter().enumerate() {
+            means[j] += xi;
+        }
+    }
+    for mean in &mut means {
+        *mean /= event.payload.x.len() as f64;
+    }
+
+    // Calculate the standard deviation for each column
+    for row in &event.payload.x {
+        for (j, xi) in row.iter().enumerate() {
+            std_devs[j] += (xi - means[j]).powf(2.0);
+        }
+    }
+    for std_dev in &mut std_devs {
+        *std_dev = (*std_dev / event.payload.x.len() as f64).sqrt();
+    }
+
     // Standardize the X values
     let mut standardized_x = vec![];
-    for row in event.payload.x.iter() {
-        let mean: f64 = row.iter().sum::<f64>() as f64 / row.len() as f64;
-        let std_dev: f64 = (row.iter().map(|xi| (xi - mean as f64).powf(2.0) as f64).sum::<f64>() / row.len() as f64).sqrt();
-        let standardized_row: Vec<f64> = row.iter().map(|xi| ((xi - mean as f64) as f64 / std_dev)).collect();
+    for row in &event.payload.x {
+        let standardized_row: Vec<f64> = row.iter().enumerate().map(|(j, xi)| (xi - means[j]) / std_devs[j]).collect();
         standardized_x.push(standardized_row);
     }
 
