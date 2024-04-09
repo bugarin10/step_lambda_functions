@@ -63,6 +63,8 @@ To build and deploy Lambda functions written in Rust using Cargo Lambda, follow 
    ```
 
 **Functions Deployed**
+
+
 ![deployed](/img/functions.png)
 
 After successful deployment, you can invoke your Lambda functions using AWS Lambda's API or integrate them with other AWS services through AWS Step Functions.
