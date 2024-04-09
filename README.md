@@ -5,6 +5,15 @@ AWS Lambda is a serverless computing service provided by Amazon Web Services (AW
 
 AWS Lambda Step Functions, on the other hand, are a serverless orchestration service that enables you to coordinate multiple AWS services into serverless workflows. Step Functions allow you to design and execute workflows that integrate Lambda functions, AWS services, and external resources.
 
+## Cargo lamda
+
+First we created the projects:
+
+```bash
+cargo lambda new <name of the project>
+```
+Then you create your functions, in this example, I normalize the data and split it in training and test.
+
 ## Normalizing Data Lambda Function
 The `normalizing_data` Lambda function is designed to normalize input data by calculating the mean and standard deviation for each column of the input matrix `x` and then standardizing the values based on these statistics. The input to this function is a JSON payload containing the data to be normalized in the format:
 
@@ -13,6 +22,13 @@ The `normalizing_data` Lambda function is designed to normalize input data by ca
     "x": [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0], [9.0, 10.0]],
     "y": [0, 1, 1, 0, 1]
 }
+```
+
+The way to do it locally is:
+
+```
+cargo lambda watch
+cargo lambda invoke normalizing_data --data-file payload.json
 ```
 
 The output of the `normalizing_data` Lambda function is a standardized version of `x` along with the corresponding `y` values.
