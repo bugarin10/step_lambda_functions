@@ -1,58 +1,64 @@
-# AWS Lambda Function Guide
+# AWS Lambda Functions and AWS Lambda Step Functions
 
-## What is an AWS Lambda Function?
+## Introduction
+AWS Lambda is a serverless computing service provided by Amazon Web Services (AWS) that allows you to run code without provisioning or managing servers. Lambda functions are designed to be event-driven, executing code in response to events such as HTTP requests, file uploads, database changes, and more.
 
-AWS Lambda is a serverless computing service provided by Amazon Web Services (AWS). It allows you to run code without provisioning or managing servers, paying only for the compute time consumed by your code. Lambda functions can be triggered by various events, such as HTTP requests, changes in AWS services, or custom events.
+AWS Lambda Step Functions, on the other hand, are a serverless orchestration service that enables you to coordinate multiple AWS services into serverless workflows. Step Functions allow you to design and execute workflows that integrate Lambda functions, AWS services, and external resources.
 
-## Understanding the Lambda Function
-
-### Functionality
-
-This Lambda function is designed to standardize input data by subtracting the mean and dividing by the standard deviation for each row in a matrix (`X`). It uses the following steps:
-
-1. Calculate the mean and standard deviation for each row in the matrix `X`.
-2. Subtract the mean from each element in the row.
-3. Divide each element by the standard deviation.
-
-The function takes input in the form of a JSON payload with the following structure:
+## Normalizing Data Lambda Function
+The `normalizing_data` Lambda function is designed to normalize input data by calculating the mean and standard deviation for each column of the input matrix `x` and then standardizing the values based on these statistics. The input to this function is a JSON payload containing the data to be normalized in the format:
 
 ```json
 {
-  "X": [[-47.51982116699219, 22.17236328125, 14.475106239318848,..,]] // Input data matrix (list of lists)
-  "y": [0, 1,0,1,1...,1]                 // Output data vector (list)
+    "x": [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0], [9.0, 10.0]],
+    "y": [0, 1, 1, 0, 1]
 }
 ```
 
-- `x`: A matrix where each row represents a data sample.
-- `y`: A vector representing the output labels or targets corresponding to each row in `X`.
+The output of the `normalizing_data` Lambda function is a standardized version of `x` along with the corresponding `y` values.
 
-The Lambda function processes this input, standardizes the `X` matrix, and returns the standardized data along with the original `y` vector.
+## Train Test Split Lambda Function
+The `train_test` Lambda function is responsible for splitting input data into training and test sets. It shuffles the input data and then splits it based on a 70% training and 30% test split. The input to this function is also a JSON payload containing the data to be split:
 
-### Input and Output Types
+```json
+{
+    "x": [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0], [9.0, 10.0]],
+    "y": [0, 1, 1, 0, 1]
+}
+```
 
-The function expects input with floating-point numbers (`f64`) for both `X` and `y` to perform the standardization correctly.
+The output of the `train_test` Lambda function is the training and test sets of `x` and `y`.
 
-- Input (`Request`):
-  - `x`: `Vec<Vec<f64>>` - Matrix of input data samples.
-  - `y`: `Vec<f64>` - Vector of output labels or targets.
+## Building and Deploying Lambda Functions
+To build and deploy Lambda functions written in Rust using Cargo Lambda, follow these steps:
 
-- Output (`Response`):
-  - `x`: `Vec<Vec<f64>>` - Standardized input data matrix.
-  - `y`: `Vec<f64>` - Unchanged output labels or targets.
+1. **Cargo Lambda Build**: Use Cargo Lambda to build your Rust code into a Lambda-compatible package. Run the following command in your project directory:
 
-## Usage
-
-To use this Lambda function:
-
-1. Create a JSON payload file (`payload.json`) with your input data in the specified format.
-
-2. Invoke the Lambda function using the AWS CLI or Lambda console, providing the payload file as input.
-
-   Using AWS CLI (this command runs locally):
    ```bash
-   cargo lambda invoke normalizing_data --data-file payload.json  
+   cargo lambda build
    ```
 
-3. Check the `output.json` file for the standardized data returned by the Lambda function. It would look like this:
+   This command will compile your Rust code and generate a ZIP file containing the Lambda function and its dependencies.
 
-![lambda_1_output](img/lambda_1_output.png)
+2. **Cargo Lambda Deploy**: After building the Lambda package, deploy it to AWS Lambda using the Cargo Lambda deploy command. Ensure that you have AWS credentials configured on your machine. Run the following command:
+
+   ```bash
+   cargo lambda deploy
+   ```
+
+**Functions Deployed**
+![deployed](/img/functions.png)
+
+After successful deployment, you can invoke your Lambda functions using AWS Lambda's API or integrate them with other AWS services through AWS Step Functions.
+
+3. **Step Functions**
+
+You can orchestrate several functions with lambda step functions machine, using lambda invoke:
+
+![step_function](/img/state_machines.png)
+
+Finally you can pass the payload and test the pipeline:
+
+![testing](img/testing.png)
+
+
